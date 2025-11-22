@@ -1,15 +1,48 @@
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
-public class Main {
-    public static void main(String[] args) {
-        //TIP Press <shortcut actionId="ShowIntentionActions"/> with your caret at the highlighted text
-        // to see how IntelliJ IDEA suggests fixing it.
-        System.out.printf("Hello and welcome!");
+import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
 
-        for (int i = 1; i <= 5; i++) {
-            //TIP Press <shortcut actionId="Debug"/> to start debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
-            // for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.
-            System.out.println("i = " + i);
-        }
+public class Main extends Application {
+    
+    @Override
+    public void start(Stage primaryStage) {
+        // Create UI components
+        Label titleLabel = new Label("JavaFX Test Application");
+        titleLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold;");
+        
+        Label statusLabel = new Label("JavaFX is working correctly!");
+        statusLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: green;");
+        
+        Button testButton = new Button("Click Me!");
+        testButton.setStyle("-fx-font-size: 14px; -fx-padding: 10px 20px;");
+        
+        // Button click handler
+        testButton.setOnAction(e -> {
+            statusLabel.setText("Button clicked! JavaFX is fully functional.");
+            statusLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: blue;");
+        });
+        
+        // Create layout
+        VBox root = new VBox(20);
+        root.setAlignment(Pos.CENTER);
+        root.setPadding(new Insets(40));
+        root.getChildren().addAll(titleLabel, statusLabel, testButton);
+        
+        // Create scene
+        Scene scene = new Scene(root, 400, 300);
+        
+        // Set up stage
+        primaryStage.setTitle("JavaFX Test - Library Project");
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+
+    public static void main(String[] args) {
+        launch(args);
     }
 }
