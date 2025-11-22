@@ -1,5 +1,0 @@
-package main.java.com.library.models;
-
-public class LibraryItem {
-    
-}
