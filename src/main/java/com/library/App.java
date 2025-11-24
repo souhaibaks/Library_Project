@@ -12,23 +12,22 @@ import java.io.IOException;
 import java.time.LocalDate;
 
 /**
- * Primary JavaFX Application that loads the books screen.
+ * Primary JavaFX Application that loads the dashboard composed of all views.
  */
 public class App extends Application {
 
     @Override
     public void start(Stage stage) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/library/views/books.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/library/views/dashboard.fxml"));
             Parent root = loader.load();
             Scene scene = new Scene(root);
-            stage.setTitle("Library Catalogue — " + DateUtils.format(LocalDate.now()));
+            stage.setTitle("Library Workspace — " + DateUtils.format(LocalDate.now()));
             stage.setScene(scene);
             stage.show();
         } catch (IOException ex) {
-            AlertUtils.showError("Failed to start", "Unable to load books view: " + ex.getMessage());
+            AlertUtils.showError("Failed to start", "Unable to load dashboard view: " + ex.getMessage());
             throw new RuntimeException("Unable to start JavaFX application", ex);
         }
     }
 }
-

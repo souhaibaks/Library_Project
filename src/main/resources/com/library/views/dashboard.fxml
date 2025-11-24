@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.layout.BorderPane?>
+
+<BorderPane prefHeight="720.0" prefWidth="1100.0"
+            xmlns="http://javafx.com/javafx/17"
+            xmlns:fx="http://javafx.com/fxml">
+    <top>
+        <Label text="Library Workspace" styleClass="header-title"
+               BorderPane.alignment="CENTER">
+            <padding>
+                <Insets top="20" right="0" bottom="10" left="0"/>
+            </padding>
+        </Label>
+    </top>
+    <center>
+        <TabPane tabClosingPolicy="UNAVAILABLE">
+            <tabs>
+                <Tab text="Catalogue">
+                    <content>
+                        <fx:include source="books.fxml" />
+                    </content>
+                </Tab>
+                <Tab text="Reservations">
+                    <content>
+                        <fx:include source="reservation.fxml" />
+                    </content>
+                </Tab>
+                <Tab text="Activity History">
+                    <content>
+                        <fx:include source="history.fxml" />
+                    </content>
+                </Tab>
+                <Tab text="Login">
+                    <content>
+                        <fx:include source="login.fxml" />
+                    </content>
+                </Tab>
+            </tabs>
+        </TabPane>
+    </center>
+</BorderPane>
