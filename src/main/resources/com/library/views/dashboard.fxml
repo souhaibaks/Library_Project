@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+
+<BorderPane prefHeight="720.0" prefWidth="1100.0"
+            xmlns="http://javafx.com/javafx/17"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.library.controllers.DashboardController"
+            stylesheets="@../css/style.css">
+    <top>
+        <HBox alignment="CENTER_LEFT" styleClass="top-bar" spacing="20">
+            <padding>
+                <Insets top="15" right="20" bottom="15" left="20"/>
+            </padding>
+            <Label fx:id="welcomeLabel" text="Library Workspace" styleClass="app-title"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button text="Log Out" onAction="#onLogout" styleClass="button, logout-button"/>
+        </HBox>
+    </top>
+    <center>
+        <!-- Using side="LEFT" creates a vertical sidebar navigation feel -->
+        <TabPane tabClosingPolicy="UNAVAILABLE" side="LEFT" styleClass="main-tabs">
+            <tabs>
+                <Tab text="Catalogue">
+                    <content>
+                        <fx:include source="books.fxml" />
+                    </content>
+                </Tab>
+                <Tab text="Reservations">
+                    <content>
+                        <fx:include source="reservation.fxml" />
+                    </content>
+                </Tab>
+                <Tab text="Activity History">
+                    <content>
+                        <fx:include source="history.fxml" />
+                    </content>
+                </Tab>
+            </tabs>
+        </TabPane>
+    </center>
+</BorderPane>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Priority?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane prefHeight="600.0" prefWidth="960.0"
+            xmlns="http://javafx.com/javafx/17"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.library.controllers.HistoryController">
+    <top>
+        <VBox spacing="8" BorderPane.alignment="CENTER">
+            <padding>
+                <Insets top="20" right="20" bottom="10" left="20"/>
+            </padding>
+            <Label text="Activity History" styleClass="header-title"/>
+            <HBox spacing="10">
+                <Label text="Search:"/>
+                <TextField fx:id="searchField" promptText="Search logs" HBox.hgrow="ALWAYS"/>
+                <ComboBox fx:id="categoryFilter" prefWidth="160"/>
+                <Button text="Clear" onAction="#onClearFilters"/>
+                <Button text="Export" onAction="#onExportHistory"/>
+            </HBox>
+            <Label fx:id="summaryLabel" text="0 entries" styleClass="section-title"/>
+        </VBox>
+    </top>
+    <center>
+        <TableView fx:id="historyTable" VBox.vgrow="ALWAYS">
+            <columns>
+                <TableColumn fx:id="timestampColumn" text="When" prefWidth="170"/>
+                <TableColumn fx:id="categoryColumn" text="Category" prefWidth="120"/>
+                <TableColumn fx:id="actionColumn" text="Action" prefWidth="200"/>
+                <TableColumn fx:id="detailsColumn" text="Details" prefWidth="420"/>
+            </columns>
+        </TableView>
+    </center>
+    <bottom>
+        <VBox spacing="6" BorderPane.alignment="CENTER">
+            <padding>
+                <Insets top="10" right="20" bottom="20" left="20"/>
+            </padding>
+            <Label text="Entry details" styleClass="section-title"/>
+            <TextArea fx:id="detailArea" promptText="Select a row to see full details."
+                      wrapText="true" prefRowCount="3" VBox.vgrow="ALWAYS"/>
+        </VBox>
+    </bottom>
+</BorderPane>
+
