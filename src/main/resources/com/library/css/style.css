@@ -1,55 +1,156 @@
 
 /* Book Card Grid */
 .book-scroll-pane {
-    -fx-background-color: transparent;
-    -fx-background: transparent;
+    -fx-background-color: #f8f9fa;
+    -fx-background: #f8f9fa;
     -fx-padding: 0;
 }
 
 .book-scroll-pane > .viewport {
-    -fx-background-color: transparent;
+    -fx-background-color: #f8f9fa;
 }
 
 .book-grid {
-    -fx-background-color: transparent;
+    -fx-background-color: #f8f9fa;
 }
 
 .book-card {
     -fx-background-color: white;
-    -fx-background-radius: 8;
-    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 4);
+    -fx-background-radius: 12;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.08), 12, 0, 0, 4);
     -fx-padding: 20;
-    -fx-border-color: #ecf0f1;
-    -fx-border-radius: 8;
+    -fx-border-color: #e9ecef;
+    -fx-border-radius: 12;
     -fx-border-width: 1;
+    -fx-cursor: hand;
 }
 
 .book-card:hover {
-    -fx-effect: dropshadow(three-pass-box, rgba(52, 152, 219, 0.2), 15, 0, 0, 8);
-    -fx-translate-y: -2;
+    -fx-effect: dropshadow(three-pass-box, rgba(52, 152, 219, 0.25), 18, 0, 0, 6);
+    -fx-translate-y: -4;
+    -fx-border-color: #3498db;
+    -fx-border-width: 2;
+}
+
+/* Item Type Badge */
+.item-type-badge {
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-text-fill: white;
+    -fx-background-radius: 10;
+    -fx-padding: 4 10 4 10;
+    -fx-alignment: center;
 }
 
 .book-title {
     -fx-font-size: 18px;
     -fx-font-weight: bold;
     -fx-text-fill: #2c3e50;
+    -fx-line-spacing: 2px;
 }
 
 .book-author {
     -fx-font-size: 14px;
-    -fx-text-fill: #7f8c8d;
+    -fx-text-fill: #6c757d;
     -fx-font-style: italic;
 }
 
 .book-genre {
     -fx-font-size: 12px;
     -fx-text-fill: white;
-    -fx-background-color: #95a5a6;
+    -fx-background-color: #6c757d;
     -fx-background-radius: 12;
-    -fx-padding: 2 8 2 8;
+    -fx-padding: 4 10 4 10;
 }
 
 .book-status {
     -fx-font-size: 13px;
     -fx-font-weight: bold;
+}
+
+/* Modern Button Styles */
+.button {
+    -fx-background-color: #3498db;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 6;
+    -fx-padding: 10 20 10 20;
+    -fx-cursor: hand;
+}
+
+.button:hover {
+    -fx-background-color: #2980b9;
+    -fx-effect: dropshadow(three-pass-box, rgba(52, 152, 219, 0.3), 8, 0, 0, 2);
+}
+
+.button:pressed {
+    -fx-background-color: #21618c;
+}
+
+/* Header Styles */
+.header-title {
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2c3e50;
+}
+
+.section-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #495057;
+}
+
+/* Form Styles */
+.text-field, .combo-box, .date-picker {
+    -fx-background-color: white;
+    -fx-border-color: #ced4da;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-padding: 8;
+}
+
+.text-field:focused, .combo-box:focused, .date-picker:focused {
+    -fx-border-color: #3498db;
+    -fx-border-width: 2;
+}
+
+/* Table Styles */
+.table-view {
+    -fx-background-color: white;
+    -fx-border-color: #e9ecef;
+    -fx-border-radius: 8;
+}
+
+.table-view .column-header {
+    -fx-background-color: #f8f9fa;
+    -fx-font-weight: bold;
+    -fx-text-fill: #495057;
+}
+
+.table-row-cell:selected {
+    -fx-background-color: #e3f2fd;
+}
+
+.table-row-cell:hover {
+    -fx-background-color: #f5f5f5;
+}
+
+/* Add Item Button */
+.add-item-button {
+    -fx-background-color: #27ae60;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 6;
+    -fx-padding: 10 20 10 20;
+    -fx-cursor: hand;
+    -fx-font-size: 14px;
+}
+
+.add-item-button:hover {
+    -fx-background-color: #229954;
+    -fx-effect: dropshadow(three-pass-box, rgba(39, 174, 96, 0.3), 8, 0, 0, 2);
+}
+
+.add-item-button:pressed {
+    -fx-background-color: #1e8449;
 }

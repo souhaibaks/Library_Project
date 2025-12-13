@@ -34,7 +34,7 @@
         </VBox>
     </top>
     <center>
-        <TableView fx:id="reservationsTable" prefHeight="360.0">
+        <TableView fx:id="reservationsTable" prefHeight="500.0">
             <columns>
                 <TableColumn fx:id="reservationIdColumn" text="ID" prefWidth="70"/>
                 <TableColumn fx:id="userColumn" text="Patron" prefWidth="160"/>
@@ -52,56 +52,8 @@
             <padding>
                 <Insets top="10" right="20" bottom="20" left="20"/>
             </padding>
-            <Label text="Create / Update Reservation" styleClass="section-title"/>
-            <GridPane hgap="12" vgap="10">
-                <columnConstraints>
-                    <ColumnConstraints percentWidth="20"/>
-                    <ColumnConstraints percentWidth="30"/>
-                    <ColumnConstraints percentWidth="20"/>
-                    <ColumnConstraints percentWidth="30"/>
-                </columnConstraints>
-                <rowConstraints>
-                    <RowConstraints minHeight="35"/>
-                    <RowConstraints minHeight="35"/>
-                    <RowConstraints minHeight="35"/>
-                    <RowConstraints minHeight="35"/>
-                </rowConstraints>
-
-                <Label text="Patron" GridPane.columnIndex="0" GridPane.rowIndex="0"/>
-                <ComboBox fx:id="userPicker" promptText="Select patron"
-                          GridPane.columnIndex="1" GridPane.rowIndex="0"/>
-
-                <Label text="Item" GridPane.columnIndex="2" GridPane.rowIndex="0"/>
-                <ComboBox fx:id="itemPicker" promptText="Select item"
-                          GridPane.columnIndex="3" GridPane.rowIndex="0"/>
-
-                <Label text="Reservation Date" GridPane.columnIndex="0" GridPane.rowIndex="1"/>
-                <DatePicker fx:id="reservationDatePicker"
-                            GridPane.columnIndex="1" GridPane.rowIndex="1"/>
-
-                <Label text="Due Date" GridPane.columnIndex="2" GridPane.rowIndex="1"/>
-                <DatePicker fx:id="dueDatePicker"
-                            GridPane.columnIndex="3" GridPane.rowIndex="1"/>
-
-                <Label text="Return Date" GridPane.columnIndex="0" GridPane.rowIndex="2"/>
-                <DatePicker fx:id="returnDatePicker"
-                            GridPane.columnIndex="1" GridPane.rowIndex="2"/>
-
-                <Label text="Status" GridPane.columnIndex="2" GridPane.rowIndex="2"/>
-                <ComboBox fx:id="statusPicker" promptText="Auto"
-                          GridPane.columnIndex="3" GridPane.rowIndex="2"/>
-
-                <Label text="Notes" GridPane.columnIndex="0" GridPane.rowIndex="3"/>
-                <TextArea fx:id="notesArea" promptText="Optional notes"
-                          prefRowCount="2"
-                          GridPane.columnIndex="1" GridPane.rowIndex="3"
-                          GridPane.columnSpan="3"/>
-            </GridPane>
             <HBox alignment="CENTER_RIGHT" spacing="10">
-                <Button text="Clear Form" onAction="#onClearForm"/>
-                <Button text="Unborrow / Return" onAction="#onUnborrow"/>
                 <Button text="Mark Returned" onAction="#onMarkReturned"/>
-                <Button text="Save Reservation" onAction="#onAddReservation" defaultButton="true"/>
             </HBox>
         </VBox>
     </bottom>

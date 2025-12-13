@@ -8,7 +8,6 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
@@ -27,8 +26,6 @@ public class LoginController {
     private TextField emailField;
     @FXML
     private PasswordField passwordField;
-    @FXML
-    private CheckBox rememberMeCheck;
     @FXML
     private Label statusLabel;
 
@@ -75,7 +72,6 @@ public class LoginController {
     private void onClearForm() {
         emailField.clear();
         passwordField.clear();
-        rememberMeCheck.setSelected(false);
         statusLabel.setText("Please sign in to continue.");
     }
 
@@ -91,23 +87,6 @@ public class LoginController {
             e.printStackTrace();
             AlertUtils.showError("Navigation Error", "Could not load the registration screen.");
         }
-    }
-
-    @FXML
-    private void onForgotPassword() {
-        if (!isFilled(emailField)) {
-            AlertUtils.showInfo("Reset instructions", "Enter your email first so we know who to help.");
-            return;
-        }
-        
-        String email = emailField.getText().trim();
-        if (!UserService.getInstance().isUserRegistered(email)) {
-            AlertUtils.showWarning("Unknown email",
-                    "We don't have an account for \"%s\" yet.".formatted(email));
-            return;
-        }
-        AlertUtils.showInfo("Reset link sent",
-                "Check %s for a temporary password.".formatted(email));
     }
 
     private boolean isFilled(TextInputControl control) {

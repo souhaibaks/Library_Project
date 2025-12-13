@@ -10,14 +10,20 @@ import com.library.models.UserDAO;
 import com.library.services.BookService;
 import com.library.services.ReservationService;
 import com.library.utils.AlertUtils;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.geometry.Insets;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
@@ -28,6 +34,9 @@ import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.Priority;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
+import java.io.IOException;
 
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -47,6 +56,8 @@ public class BooksController {
     private TextField searchField; // live filter input
 
     @FXML
+    private ComboBox<String> itemTypeComboBox; // Item type selector
+    @FXML
     private TextField titleField; // form inputs for create/update
     @FXML
     private TextField authorField;
@@ -59,24 +70,108 @@ public class BooksController {
     @FXML
     private TextField pagesField;
     @FXML
+    private TextField categoryField; // Magazine field
+    @FXML
+    private TextField issueField; // Magazine field
+    @FXML
     private DatePicker publicationDatePicker;
     @FXML
     private TextArea notesArea;
+    @FXML
+    private Label genreLabel;
+    @FXML
+    private Label pagesLabel;
+    @FXML
+    private Label categoryLabel;
+    @FXML
+    private Label issueLabel;
+    @FXML
+    private Button addItemButton; // The button to toggle the form
+    
+    private Stage addItemStage; // The popup window for the add item form
 
     private final ObservableList<LibraryItem> masterItems = FXCollections.observableArrayList(); // canonical dataset
     private FilteredList<LibraryItem> filteredItems;
     private final Map<Integer, String> bookNotes = new HashMap<>();
     private final BookService bookService = BookService.getInstance();
+    private boolean isFormVisible = false;
 
     @FXML
     private void initialize() {
         // Refresh services to ensure latest data from database
         bookService.refresh();
-        ReservationService.getInstance().refresh();
+        ReservationService reservationService = ReservationService.getInstance();
+        reservationService.refresh();
+        
+        // Setup item type selector (only if form fields are available)
+        // Form fields are now in the popup, so they may be null here
+        if (itemTypeComboBox != null) {
+            itemTypeComboBox.setItems(FXCollections.observableArrayList("Book", "Magazine"));
+            itemTypeComboBox.getSelectionModel().selectFirst(); // Default to Book
+            itemTypeComboBox.setOnAction(e -> onItemTypeChanged());
+            onItemTypeChanged(); // Initialize form visibility
+        }
         
         // Load all items (books and magazines) from database
         loadItemsFromDatabase();
         setupFiltering(); // This will also trigger the initial render
+        
+        // Listen to reservation changes to refresh catalog when items are returned
+        reservationService.getReservations().addListener((ListChangeListener<Reservation>) change -> {
+            // When reservations change, refresh the catalog to update availability status
+            Platform.runLater(() -> {
+                bookService.refresh();
+                loadItemsFromDatabase();
+                renderBooks();
+            });
+        });
+    }
+    
+    /**
+     * Handles item type selection change - shows/hides relevant fields
+     */
+    private void onItemTypeChanged() {
+        if (itemTypeComboBox == null || itemTypeComboBox.getSelectionModel().getSelectedItem() == null) {
+            return;
+        }
+        String selectedType = itemTypeComboBox.getSelectionModel().getSelectedItem();
+        boolean isBook = "Book".equals(selectedType);
+        
+        // Show/hide book fields
+        if (genreLabel != null) {
+            genreLabel.setVisible(isBook);
+            genreLabel.setManaged(isBook);
+        }
+        if (genreField != null) {
+            genreField.setVisible(isBook);
+            genreField.setManaged(isBook);
+        }
+        if (pagesLabel != null) {
+            pagesLabel.setVisible(isBook);
+            pagesLabel.setManaged(isBook);
+        }
+        if (pagesField != null) {
+            pagesField.setVisible(isBook);
+            pagesField.setManaged(isBook);
+        }
+        
+        // Show/hide magazine fields
+        if (categoryLabel != null) {
+            categoryLabel.setVisible(!isBook);
+            categoryLabel.setManaged(!isBook);
+        }
+        if (categoryField != null) {
+            categoryField.setVisible(!isBook);
+            categoryField.setManaged(!isBook);
+        }
+        if (issueLabel != null) {
+            issueLabel.setVisible(!isBook);
+            issueLabel.setManaged(!isBook);
+        }
+        if (issueField != null) {
+            issueField.setVisible(!isBook);
+            issueField.setManaged(!isBook);
+        }
     }
     
     /**
@@ -103,6 +198,11 @@ public class BooksController {
         card.getStyleClass().add("book-card");
         card.setPrefWidth(220);
         card.setPrefHeight(280);
+
+        // Item type badge
+        Label typeLabel = new Label("BOOK");
+        typeLabel.getStyleClass().add("item-type-badge");
+        typeLabel.setStyle("-fx-background-color: #3498db;");
 
         Label titleLabel = new Label(book.getTitle());
         titleLabel.getStyleClass().add("book-title");
@@ -170,7 +270,7 @@ public class BooksController {
             reserveBtn.setOnAction(e -> onReserve(book));
         }
 
-        card.getChildren().addAll(titleLabel, authorLabel, genreLabel, statusLabel, spacer, reserveBtn);
+        card.getChildren().addAll(typeLabel, titleLabel, authorLabel, genreLabel, statusLabel, spacer, reserveBtn);
         
         // Click to edit (only for books, magazines use different form)
         card.setOnMouseClicked(e -> {
@@ -185,6 +285,11 @@ public class BooksController {
         card.getStyleClass().add("book-card");
         card.setPrefWidth(220);
         card.setPrefHeight(280);
+
+        // Item type badge
+        Label typeLabel = new Label("MAGAZINE");
+        typeLabel.getStyleClass().add("item-type-badge");
+        typeLabel.setStyle("-fx-background-color: #e67e22;");
 
         Label titleLabel = new Label(magazine.getTitle());
         titleLabel.getStyleClass().add("book-title");
@@ -252,7 +357,7 @@ public class BooksController {
             reserveBtn.setOnAction(e -> onReserveMagazine(magazine));
         }
 
-        card.getChildren().addAll(titleLabel, authorLabel, categoryLabel, statusLabel, spacer, reserveBtn);
+        card.getChildren().addAll(typeLabel, titleLabel, authorLabel, categoryLabel, statusLabel, spacer, reserveBtn);
         
         // Click to view details
         card.setOnMouseClicked(e -> {
@@ -299,9 +404,24 @@ public class BooksController {
 
 
     @FXML
+    private void onAddItem() {
+        String itemType = itemTypeComboBox.getSelectionModel().getSelectedItem();
+        
+        if (itemType == null) {
+            AlertUtils.showWarning("Item Type Required", "Please select an item type (Book or Magazine).");
+            return;
+        }
+        
+        if ("Book".equals(itemType)) {
+            onAddBook();
+        } else {
+            onAddMagazine();
+        }
+    }
+    
     private void onAddBook() {
         // Guard against missing inputs before persisting to the table
-        if (!validateForm()) {
+        if (!validateBookForm()) {
             AlertUtils.showWarning("Incomplete data",
                     "Please provide title, author, ISBN, genre, publisher, pages and publication date.");
             return;
@@ -345,12 +465,122 @@ public class BooksController {
             renderBooks(); 
             
             clearFormFields();
+            // Hide the form after successful save
+            if (addItemStage != null && addItemStage.isShowing()) {
+                addItemStage.close();
+                isFormVisible = false;
+            }
             AlertUtils.showInfo("Book saved", "Book \"%s\" has been added to the database.".formatted(book.getTitle()));
         } else {
             AlertUtils.showError("Error", "Failed to save book to database. Please check the console for details and try again.");
         }
     }
+    
+    private void onAddMagazine() {
+        // Guard against missing inputs
+        if (!validateMagazineForm()) {
+            AlertUtils.showWarning("Incomplete data",
+                    "Please provide title, author, ISBN, category, publisher, issue number and publication date.");
+            return;
+        }
 
+        int issueNumber;
+        try {
+            issueNumber = Integer.parseInt(issueField.getText().trim());
+            if (issueNumber <= 0) {
+                throw new NumberFormatException("Issue number must be positive");
+            }
+        } catch (NumberFormatException ex) {
+            AlertUtils.showError("Invalid issue number", "Enter a positive number.");
+            return;
+        }
+
+        Magazine magazine = new Magazine(
+                0, // ID will be set by database
+                titleField.getText().trim(),
+                authorField.getText().trim(),
+                isbnField.getText().trim(),
+                publicationDatePicker.getValue(),
+                issueNumber,
+                publisherField.getText().trim(),
+                categoryField.getText().trim()
+        );
+
+        // Save to database via BookService
+        boolean success = bookService.addMagazine(magazine);
+        
+        if (success) {
+            // Reload all items from database to get the updated list with IDs
+            loadItemsFromDatabase();
+            
+            String note = notesArea.getText();
+            if (note != null && !note.isBlank()) {
+                bookNotes.put(magazine.getId(), note.trim());
+            }
+            
+            // Refresh grid
+            renderBooks(); 
+            
+            clearFormFields();
+            // Hide the form after successful save
+            if (addItemStage != null && addItemStage.isShowing()) {
+                addItemStage.close();
+                isFormVisible = false;
+            }
+            AlertUtils.showInfo("Magazine saved", "Magazine \"%s\" has been added to the database.".formatted(magazine.getTitle()));
+        } else {
+            AlertUtils.showError("Error", "Failed to save magazine to database. Please check the console for details and try again.");
+        }
+    }
+
+    @FXML
+    private void onToggleAddForm() {
+        if (addItemStage == null || !addItemStage.isShowing()) {
+            // Show the popup window
+            try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/library/views/addItemForm.fxml"));
+                loader.setController(this); // Use the same controller instance
+                Parent formRoot = loader.load();
+                
+                Scene formScene = new Scene(formRoot);
+                formScene.getStylesheets().add(getClass().getResource("/com/library/css/style.css").toExternalForm());
+                
+                addItemStage = new Stage();
+                addItemStage.setTitle("Add / Edit Item");
+                addItemStage.setScene(formScene);
+                addItemStage.initModality(Modality.WINDOW_MODAL);
+                addItemStage.initOwner(addItemButton.getScene().getWindow());
+                addItemStage.setResizable(false);
+                
+                // Set size based on form content
+                addItemStage.sizeToScene();
+                
+                // Handle window close
+                addItemStage.setOnCloseRequest(e -> {
+                    isFormVisible = false;
+                });
+                
+                // Initialize form fields
+                if (itemTypeComboBox.getItems().isEmpty()) {
+                    itemTypeComboBox.setItems(FXCollections.observableArrayList("Book", "Magazine"));
+                }
+                itemTypeComboBox.getSelectionModel().selectFirst();
+                itemTypeComboBox.setOnAction(e -> onItemTypeChanged());
+                onItemTypeChanged(); // Initialize form visibility
+                
+                addItemStage.show();
+                isFormVisible = true;
+            } catch (IOException e) {
+                AlertUtils.showError("Error", "Failed to load add item form: " + e.getMessage());
+                e.printStackTrace();
+            }
+        } else {
+            // Hide the popup window
+            addItemStage.close();
+            isFormVisible = false;
+        }
+    }
+    
     @FXML
     private void onClearForm() {
         // Wipe the editor fields
@@ -385,14 +615,25 @@ public class BooksController {
                 magazine.getIssueNumber()));
     }
 
-    private boolean validateForm() {
-        // Simple presence validation; business rules belong in a service layer
+    private boolean validateBookForm() {
+        // Simple presence validation for books
         return isFilled(titleField)
                 && isFilled(authorField)
                 && isFilled(isbnField)
                 && isFilled(genreField)
                 && isFilled(publisherField)
                 && isFilled(pagesField)
+                && publicationDatePicker.getValue() != null;
+    }
+    
+    private boolean validateMagazineForm() {
+        // Simple presence validation for magazines
+        return isFilled(titleField)
+                && isFilled(authorField)
+                && isFilled(isbnField)
+                && isFilled(categoryField)
+                && isFilled(publisherField)
+                && isFilled(issueField)
                 && publicationDatePicker.getValue() != null;
     }
 
@@ -402,14 +643,18 @@ public class BooksController {
 
     private void clearFormFields() {
         // Shared helper to reset the editor controls
+        itemTypeComboBox.getSelectionModel().selectFirst();
         titleField.clear();
         authorField.clear();
         isbnField.clear();
         genreField.clear();
         publisherField.clear();
         pagesField.clear();
+        categoryField.clear();
+        issueField.clear();
         publicationDatePicker.setValue(null);
         notesArea.clear();
+        onItemTypeChanged(); // Reset form visibility
     }
 
     private boolean containsIgnoreCase(String value, String searchTerm) {

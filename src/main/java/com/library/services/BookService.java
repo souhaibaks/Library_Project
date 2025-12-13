@@ -94,7 +94,8 @@ public class BookService {
     public boolean addMagazine(Magazine magazine) {
         int id = itemDAO.insertMagazine(magazine);
         if (id > 0) {
-            magazines.add(magazine);
+            // Refresh from database to ensure consistency
+            loadMagazinesFromDatabase();
             return true;
         }
         return false;
