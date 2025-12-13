@@ -1,6 +1,10 @@
 package com.library.controllers;
 
 import com.library.models.Book;
+import com.library.models.Reservation;
+import com.library.models.User;
+import com.library.services.ReservationService;
+import com.library.services.UserService;
 import com.library.utils.AlertUtils;
 import com.library.utils.DateUtils;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -9,16 +13,29 @@ import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
+import javafx.geometry.Insets;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.DatePicker;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.scene.control.Dialog;
+import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.Priority;
+import javafx.scene.text.Text;
 
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -27,25 +44,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class BooksController {
 
     @FXML
-    private TableView<Book> booksTable; // backing list of books shown to the user
-    @FXML
-    private TableColumn<Book, Number> idColumn;
-    @FXML
-    private TableColumn<Book, String> titleColumn; // table columns map to Book properties
-    @FXML
-    private TableColumn<Book, String> authorColumn;
-    @FXML
-    private TableColumn<Book, String> isbnColumn;
-    @FXML
-    private TableColumn<Book, String> genreColumn;
-    @FXML
-    private TableColumn<Book, String> publisherColumn;
-    @FXML
-    private TableColumn<Book, Number> pagesColumn;
-    @FXML
-    private TableColumn<Book, String> publishedColumn;
-    @FXML
-    private TableColumn<Book, String> availabilityColumn;
+    private FlowPane booksContainer; // Replaces TableView
 
     @FXML
     private TextField searchField; // live filter input
@@ -75,37 +74,67 @@ public class BooksController {
     @FXML
     private void initialize() {
         // Configure UI bindings and load demo data
-        configureTable();
-        setupFiltering();
         seedSampleData();
-        booksTable.getSelectionModel().selectedItemProperty().addListener(
-                (obs, oldSelection, newSelection) -> {
-                    if (newSelection != null) {
-                        populateForm(newSelection);
-                    }
-                }
-        );
+        setupFiltering(); // This will also trigger the initial render
     }
 
-    /**
-     * Binds table columns to the appropriate Book fields.
-     */
-    private void configureTable() {
-        idColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().getId()));
-        titleColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().getTitle()));
-        authorColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().getAuthor()));
-        isbnColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().getIsbn()));
-        genreColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().getGenre()));
-        publisherColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().getPublisher()));
-        pagesColumn.setCellValueFactory(cell -> new ReadOnlyObjectWrapper<>(cell.getValue().getNumberOfPages()));
-        publishedColumn.setCellValueFactory(cell -> {
-            LocalDate date = cell.getValue().getPublicationDate();
-            return new ReadOnlyObjectWrapper<>(DateUtils.format(date));
+    private void renderBooks() {
+        booksContainer.getChildren().clear();
+        for (Book book : filteredBooks) {
+            booksContainer.getChildren().add(createBookCard(book));
+        }
+    }
+
+    private VBox createBookCard(Book book) {
+        VBox card = new VBox(10);
+        card.getStyleClass().add("book-card");
+        card.setPrefWidth(220);
+        card.setPrefHeight(280);
+
+        Label titleLabel = new Label(book.getTitle());
+        titleLabel.getStyleClass().add("book-title");
+        titleLabel.setWrapText(true);
+
+        Label authorLabel = new Label("by " + book.getAuthor());
+        authorLabel.getStyleClass().add("book-author");
+
+        Label genreLabel = new Label(book.getGenre());
+        genreLabel.getStyleClass().add("book-genre");
+
+        // Availability Status
+        LocalDate today = LocalDate.now();
+        Optional<Reservation> activeRes = ReservationService.getInstance().getReservations().stream()
+            .filter(r -> r.getItem().getId() == book.getId())
+            .filter(r -> !today.isBefore(r.getReservationDate()) && !today.isAfter(r.getDueDate()))
+            .findFirst();
+
+        Label statusLabel = new Label();
+        statusLabel.getStyleClass().add("book-status");
+        if (activeRes.isPresent()) {
+            long daysLeft = java.time.temporal.ChronoUnit.DAYS.between(today, activeRes.get().getDueDate());
+            statusLabel.setText("Reserved (%d days left)".formatted(daysLeft));
+            statusLabel.setStyle("-fx-text-fill: #e74c3c;"); // Red for reserved
+        } else {
+            statusLabel.setText("Available");
+            statusLabel.setStyle("-fx-text-fill: #27ae60;"); // Green for available
+        }
+
+        Region spacer = new Region();
+        VBox.setVgrow(spacer, Priority.ALWAYS);
+
+        Button reserveBtn = new Button("Reserve");
+        reserveBtn.getStyleClass().add("button");
+        reserveBtn.setMaxWidth(Double.MAX_VALUE);
+        reserveBtn.setOnAction(e -> onReserve(book));
+
+        card.getChildren().addAll(titleLabel, authorLabel, genreLabel, statusLabel, spacer, reserveBtn);
+        
+        // Click to edit
+        card.setOnMouseClicked(e -> {
+            if (e.getClickCount() == 2) populateForm(book);
         });
-        availabilityColumn.setCellValueFactory(cell -> {
-            String availability = cell.getValue().isAvailable() ? "Available" : "Checked out";
-            return new ReadOnlyObjectWrapper<>(availability);
-        });
+        
+        return card;
     }
 
     /**
@@ -113,6 +142,10 @@ public class BooksController {
      */
     private void setupFiltering() {
         filteredBooks = new FilteredList<>(masterBooks, book -> true);
+        
+        // Listener to re-render when filter changes
+        filteredBooks.predicateProperty().addListener((obs, oldVal, newVal) -> renderBooks());
+
         searchField.textProperty().addListener((obs, oldValue, newValue) -> {
             String searchTerm = newValue == null ? "" : newValue.trim().toLowerCase(Locale.ENGLISH);
             filteredBooks.setPredicate(book -> {
@@ -126,9 +159,9 @@ public class BooksController {
                         || containsIgnoreCase(book.getPublisher(), searchTerm);
             });
         });
-        SortedList<Book> sortedBooks = new SortedList<>(filteredBooks);
-        sortedBooks.comparatorProperty().bind(booksTable.comparatorProperty());
-        booksTable.setItems(sortedBooks);
+        
+        // Initial render
+        renderBooks();
     }
 
     /**
@@ -185,15 +218,17 @@ public class BooksController {
         if (note != null && !note.isBlank()) {
             bookNotes.put(id, note.trim());
         }
-        booksTable.getSelectionModel().select(book);
+        
+        // Refresh grid
+        renderBooks(); 
+        
         clearFormFields();
         AlertUtils.showInfo("Book saved", "Book \"%s\" has been added.".formatted(book.getTitle()));
     }
 
     @FXML
     private void onClearForm() {
-        // Deselect table row and wipe the editor fields
-        booksTable.getSelectionModel().clearSelection();
+        // Wipe the editor fields
         clearFormFields();
     }
 
@@ -245,6 +280,92 @@ public class BooksController {
     private boolean containsIgnoreCase(String value, String searchTerm) {
         // Utility used by the FilteredList predicate
         return value != null && value.toLowerCase(Locale.ENGLISH).contains(searchTerm);
+    }
+
+    private void onReserve(Book book) {
+        Dialog<Reservation> dialog = new Dialog<>();
+        dialog.setTitle("Reserve Book");
+        dialog.setHeaderText("Reserve: " + book.getTitle());
+
+        ButtonType reserveButtonType = new ButtonType("Confirm Reservation", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(reserveButtonType, ButtonType.CANCEL);
+
+        GridPane grid = new GridPane();
+        grid.setHgap(10);
+        grid.setVgap(10);
+        grid.setPadding(new Insets(20, 150, 10, 10));
+
+        TextField borrowerField = new TextField();
+        User currentUser = UserService.getInstance().getCurrentUser();
+        if (currentUser != null) {
+            borrowerField.setText(currentUser.getFullName());
+            borrowerField.setEditable(false);
+        } else {
+            borrowerField.setPromptText("Borrower Name");
+        }
+
+        DatePicker startDatePicker = new DatePicker(LocalDate.now());
+        DatePicker endDatePicker = new DatePicker(LocalDate.now().plusDays(7));
+
+        grid.add(new Label("Borrower:"), 0, 0);
+        grid.add(borrowerField, 1, 0);
+        grid.add(new Label("Start Date:"), 0, 1);
+        grid.add(startDatePicker, 1, 1);
+        grid.add(new Label("End Date:"), 0, 2);
+        grid.add(endDatePicker, 1, 2);
+
+        dialog.getDialogPane().setContent(grid);
+
+        final Button btnReserve = (Button) dialog.getDialogPane().lookupButton(reserveButtonType);
+        btnReserve.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
+            LocalDate start = startDatePicker.getValue();
+            LocalDate end = endDatePicker.getValue();
+
+            if (start == null || end == null) {
+                AlertUtils.showWarning("Invalid Dates", "Please select start and end dates.");
+                event.consume();
+                return;
+            }
+            if (end.isBefore(start)) {
+                AlertUtils.showWarning("Invalid Dates", "End date cannot be before start date.");
+                event.consume();
+                return;
+            }
+            
+            if (!ReservationService.getInstance().isAvailable(ReservationService.getInstance().getReservations(), book, start, end)) {
+                AlertUtils.showError("Not Available", "This book is already reserved for the selected dates.");
+                event.consume();
+                return;
+            }
+        });
+
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == reserveButtonType) {
+                User user = currentUser; 
+                if (user == null) {
+                    user = new User(0, borrowerField.getText(), "", "", ""); 
+                }
+                
+                return new Reservation(
+                        (int)(System.currentTimeMillis()/1000), 
+                        user,
+                        book,
+                        startDatePicker.getValue(),
+                        endDatePicker.getValue(),
+                        null,
+                        Reservation.ReservationStatus.ACTIVE
+                );
+            }
+            return null;
+        });
+
+        Optional<Reservation> result = dialog.showAndWait();
+
+        result.ifPresent(reservation -> {
+            ReservationService.getInstance().addReservation(reservation);
+            AlertUtils.showInfo("Success", "Book reserved successfully!");
+            renderBooks(); // Refresh to show updated status
+        });
     }
 }
 

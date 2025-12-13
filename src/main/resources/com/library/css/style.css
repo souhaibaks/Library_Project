@@ -1,0 +1,55 @@
+
+/* Book Card Grid */
+.book-scroll-pane {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-padding: 0;
+}
+
+.book-scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+.book-grid {
+    -fx-background-color: transparent;
+}
+
+.book-card {
+    -fx-background-color: white;
+    -fx-background-radius: 8;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.1), 10, 0, 0, 4);
+    -fx-padding: 20;
+    -fx-border-color: #ecf0f1;
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+}
+
+.book-card:hover {
+    -fx-effect: dropshadow(three-pass-box, rgba(52, 152, 219, 0.2), 15, 0, 0, 8);
+    -fx-translate-y: -2;
+}
+
+.book-title {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #2c3e50;
+}
+
+.book-author {
+    -fx-font-size: 14px;
+    -fx-text-fill: #7f8c8d;
+    -fx-font-style: italic;
+}
+
+.book-genre {
+    -fx-font-size: 12px;
+    -fx-text-fill: white;
+    -fx-background-color: #95a5a6;
+    -fx-background-radius: 12;
+    -fx-padding: 2 8 2 8;
+}
+
+.book-status {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+}

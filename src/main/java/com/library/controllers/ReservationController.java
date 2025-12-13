@@ -5,6 +5,7 @@ import com.library.models.Reservation;
 import com.library.models.User;
 import com.library.utils.AlertUtils;
 import com.library.utils.DateUtils;
+import com.library.services.ReservationService;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -67,12 +68,12 @@ public class ReservationController {
     @FXML
     private TextArea notesArea;
 
-    private final ObservableList<Reservation> masterReservations = FXCollections.observableArrayList();
-    private FilteredList<Reservation> filteredReservations;
     private final ObservableList<User> userOptions = FXCollections.observableArrayList();
     private final ObservableList<Book> bookOptions = FXCollections.observableArrayList();
     private final Map<Integer, String> reservationNotes = new HashMap<>();
     private static final AtomicInteger ID_GENERATOR = new AtomicInteger(4000);
+    private final ReservationService reservationService = ReservationService.getInstance();
+    private FilteredList<Reservation> filteredReservations;
 
     @FXML
     private void initialize() {
@@ -138,7 +139,7 @@ public class ReservationController {
     }
 
     private void setupFiltering() {
-        filteredReservations = new FilteredList<>(masterReservations, reservation -> true);
+        filteredReservations = new FilteredList<>(reservationService.getReservations(), reservation -> true);
         searchField.textProperty().addListener((obs, oldValue, newValue) -> {
             String searchTerm = newValue == null ? "" : newValue.trim().toLowerCase(Locale.ENGLISH);
             filteredReservations.setPredicate(reservation -> {
@@ -157,7 +158,7 @@ public class ReservationController {
     }
 
     private void seedSampleData() {
-        if (!masterReservations.isEmpty()) {
+        if (!reservationService.getReservations().isEmpty()) {
             return;
         }
 
@@ -204,7 +205,7 @@ public class ReservationController {
                 Reservation.ReservationStatus.OVERDUE
         );
 
-        masterReservations.addAll(reservationOne, reservationTwo, reservationThree);
+        reservationService.getReservations().addAll(reservationOne, reservationTwo, reservationThree);
         reservationNotes.put(reservationThree.getId(), "Send reminder email tomorrow.");
     }
 
@@ -231,6 +232,13 @@ public class ReservationController {
             return;
         }
 
+        // Check for conflicts using Interval Scheduling
+        if (!reservationService.isAvailable(reservationService.getReservations(), itemPicker.getValue(), reservationDate, dueDate)) {
+            AlertUtils.showError("Booking Conflict", 
+                "The selected item is already reserved during the chosen period.\nPlease select different dates.");
+            return;
+        }
+
         Reservation.ReservationStatus status = statusPicker.getValue();
         if (status == null) {
             status = returnDate != null
@@ -248,7 +256,7 @@ public class ReservationController {
                 status
         );
 
-        masterReservations.add(reservation);
+        reservationService.addReservation(reservation);
         String note = notesArea.getText();
         if (note != null && !note.isBlank()) {
             reservationNotes.put(reservation.getId(), note.trim());

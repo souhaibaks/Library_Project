@@ -1,17 +1,22 @@
 package com.library.controllers;
 
 import com.library.models.User;
+import com.library.services.UserService;
 import com.library.utils.AlertUtils;
+import com.library.utils.DateUtils;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputControl;
+import javafx.stage.Stage;
 
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
+import java.io.IOException;
+import java.time.LocalDate;
 
 /**
  * Simple in-memory authentication demo that wires the login.fxml controls.
@@ -27,28 +32,9 @@ public class LoginController {
     @FXML
     private Label statusLabel;
 
-    private final Map<String, String> credentials = new HashMap<>();
-    private final Map<String, User> users = new HashMap<>();
-
     @FXML
     private void initialize() {
-        seedUsers();
         statusLabel.setText("Please sign in to continue.");
-    }
-
-    private void seedUsers() {
-        if (!credentials.isEmpty()) {
-            return;
-        }
-        registerUser(new User(1, "Ava", "Nguyen", "ava@library.local", "555-0100"), "welcome1!");
-        registerUser(new User(2, "Noah", "Silva", "noah@library.local", "555-0110"), "welcome2!");
-        registerUser(new User(3, "Liam", "Turner", "liam@library.local", "555-0120"), "welcome3!");
-    }
-
-    private void registerUser(User user, String password) {
-        String key = key(user.getEmail());
-        users.put(key, user);
-        credentials.put(key, password);
     }
 
     @FXML
@@ -58,18 +44,26 @@ public class LoginController {
             return;
         }
 
-        String email = key(emailField.getText());
+        String email = emailField.getText();
         String password = passwordField.getText();
-        String expected = credentials.get(email);
+        
+        User user = UserService.getInstance().authenticate(email, password);
 
-        if (expected != null && expected.equals(password)) {
-            User user = users.get(email);
+        if (user != null) {
             statusLabel.setText("Signed in as %s".formatted(user.getFullName()));
-            AlertUtils.showInfo("Login successful",
-                    "Welcome back, %s%s".formatted(
-                            user.getFirstName(),
-                            rememberMeCheck.isSelected() ? " (session remembered)" : ""));
-            passwordField.clear();
+            
+            // Navigate to Dashboard
+            try {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/library/views/dashboard.fxml"));
+                Parent root = loader.load();
+                Stage stage = (Stage) emailField.getScene().getWindow();
+                stage.setTitle("Library Workspace — " + DateUtils.format(LocalDate.now()));
+                stage.setScene(new Scene(root));
+            } catch (IOException e) {
+                e.printStackTrace();
+                AlertUtils.showError("Login Error", "Could not load the dashboard.");
+            }
+
         } else {
             statusLabel.setText("Authentication failed");
             AlertUtils.showError("Invalid credentials",
@@ -86,26 +80,37 @@ public class LoginController {
     }
 
     @FXML
+    private void onCreateAccount() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/library/views/register.fxml"));
+            Parent root = loader.load();
+            Stage stage = (Stage) emailField.getScene().getWindow();
+            stage.setTitle("Library Portal — Create Account");
+            stage.setScene(new Scene(root));
+        } catch (IOException e) {
+            e.printStackTrace();
+            AlertUtils.showError("Navigation Error", "Could not load the registration screen.");
+        }
+    }
+
+    @FXML
     private void onForgotPassword() {
         if (!isFilled(emailField)) {
             AlertUtils.showInfo("Reset instructions", "Enter your email first so we know who to help.");
             return;
         }
-        String email = key(emailField.getText());
-        if (!credentials.containsKey(email)) {
+        
+        String email = emailField.getText().trim();
+        if (!UserService.getInstance().isUserRegistered(email)) {
             AlertUtils.showWarning("Unknown email",
-                    "We don't have an account for \"%s\" yet.".formatted(emailField.getText().trim()));
+                    "We don't have an account for \"%s\" yet.".formatted(email));
             return;
         }
         AlertUtils.showInfo("Reset link sent",
-                "Check %s for a temporary password.".formatted(emailField.getText().trim()));
+                "Check %s for a temporary password.".formatted(email));
     }
 
     private boolean isFilled(TextInputControl control) {
         return control.getText() != null && !control.getText().trim().isEmpty();
-    }
-
-    private String key(String email) {
-        return email == null ? "" : email.trim().toLowerCase(Locale.ENGLISH);
     }
 }

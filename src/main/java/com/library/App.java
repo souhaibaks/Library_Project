@@ -19,10 +19,10 @@ public class App extends Application {
     @Override
     public void start(Stage stage) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/library/views/dashboard.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/library/views/login.fxml"));
             Parent root = loader.load();
             Scene scene = new Scene(root);
-            stage.setTitle("Library Workspace — " + DateUtils.format(LocalDate.now()));
+            stage.setTitle("Library Portal — Login");
             stage.setScene(scene);
             stage.show();
         } catch (IOException ex) {
