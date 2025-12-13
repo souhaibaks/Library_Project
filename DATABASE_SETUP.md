@@ -93,29 +93,7 @@ You should see:
      - File → Project Structure → Libraries → + → Java → Select the JAR file
    - **Command Line**:
      - Add to classpath: `-cp "path/to/mysql-connector-j-8.0.33.jar"`
-
-### Run the Test:
-```bash
-# Compile (replace with your actual path to the MySQL connector JAR)
-javac -cp "/path/to/mysql-connector-j-8.0.33.jar" -d out src/main/java/com/library/TestConnection.java src/main/java/com/library/models/DBConnection.java
-
-# Run
-java -cp "/path/to/mysql-connector-j-8.0.33.jar:out" com.library.TestConnection
-```
-
-**Windows example:**
-```bash
-javac -cp "C:\path\to\mysql-connector-j-8.0.33.jar" -d out src\main\java\com\library\TestConnection.java src\main\java\com\library\models\DBConnection.java
-java -cp "C:\path\to\mysql-connector-j-8.0.33.jar;out" com.library.TestConnection
-```
-
-**macOS/Linux example:**
-```bash
-javac -cp "/path/to/mysql-connector-j-8.0.33.jar" -d out src/main/java/com/library/TestConnection.java src/main/java/com/library/models/DBConnection.java
-java -cp "/path/to/mysql-connector-j-8.0.33.jar:out" com.library.TestConnection
-```
-
-**Note:** The `TestConnection.java` file has been removed from the project. You can test the connection by running the application directly.
+     
 
 ## Step 7: Configure Connection (if needed)
 
