@@ -85,10 +85,10 @@ You should see:
 ### Run the Test:
 ```bash
 # Compile
-javac -cp "path/to/mysql-connector-j-8.0.33.jar" -d out src/main/java/com/library/TestConnection.java src/main/java/com/library/models/DBConnection.java
+javac -cp "C:/Users/AMBEN/Desktop/mysql-connector-j-8.0.33.jar" -d out src/main/java/com/library/TestConnection.java src/main/java/com/library/models/DBConnection.java
 
 # Run
-java -cp "out;path/to/mysql-connector-j-8.0.33.jar" com.library.TestConnection
+java -cp "C:/Users/AMBEN/Desktop/mysql-connector-j-8.0.33.jar" com.library.TestConnection
 ```
 
 Or run `TestConnection.java` from your IDE.

@@ -3,6 +3,8 @@ package com.library.controllers;
 import com.library.models.Book;
 import com.library.models.Reservation;
 import com.library.models.User;
+import com.library.models.UserDAO;
+import com.library.services.BookService;
 import com.library.services.ReservationService;
 import com.library.services.UserService;
 import com.library.utils.AlertUtils;
@@ -36,7 +38,6 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Handles wiring between the books.fxml view and the in-memory catalogue data.
@@ -69,13 +70,21 @@ public class BooksController {
     private final ObservableList<Book> masterBooks = FXCollections.observableArrayList(); // canonical dataset
     private FilteredList<Book> filteredBooks;
     private final Map<Integer, String> bookNotes = new HashMap<>();
-    private static final AtomicInteger ID_GENERATOR = new AtomicInteger(1000); // mock id source
+    private final BookService bookService = BookService.getInstance();
 
     @FXML
     private void initialize() {
-        // Configure UI bindings and load demo data
-        seedSampleData();
+        // Load books from database
+        loadBooksFromDatabase();
         setupFiltering(); // This will also trigger the initial render
+    }
+    
+    /**
+     * Loads books from the database via BookService
+     */
+    private void loadBooksFromDatabase() {
+        masterBooks.clear();
+        masterBooks.addAll(bookService.getBooks());
     }
 
     private void renderBooks() {
@@ -164,22 +173,6 @@ public class BooksController {
         renderBooks();
     }
 
-    /**
-     * Adds three well-known programming titles so the UI is populated.
-     */
-    private void seedSampleData() {
-        if (!masterBooks.isEmpty()) {
-            return;
-        }
-        masterBooks.addAll(
-                new Book(ID_GENERATOR.getAndIncrement(), "Effective Java", "Joshua Bloch",
-                        "9780134685991", LocalDate.of(2018, 1, 6), 416, "Programming", "Addison-Wesley"),
-                new Book(ID_GENERATOR.getAndIncrement(), "Clean Code", "Robert C. Martin",
-                        "9780132350884", LocalDate.of(2008, 8, 1), 464, "Programming", "Prentice Hall"),
-                new Book(ID_GENERATOR.getAndIncrement(), "The Pragmatic Programmer", "Andrew Hunt",
-                        "9780135957059", LocalDate.of(2019, 9, 13), 352, "Programming", "Addison-Wesley")
-        );
-    }
 
     @FXML
     private void onAddBook() {
@@ -201,9 +194,8 @@ public class BooksController {
             return;
         }
 
-        int id = ID_GENERATOR.getAndIncrement();
         Book book = new Book(
-                id,
+                0, // ID will be set by database
                 titleField.getText().trim(),
                 authorField.getText().trim(),
                 isbnField.getText().trim(),
@@ -213,17 +205,26 @@ public class BooksController {
                 publisherField.getText().trim()
         );
 
-        masterBooks.add(book);
-        String note = notesArea.getText();
-        if (note != null && !note.isBlank()) {
-            bookNotes.put(id, note.trim());
+        // Save to database via BookService
+        boolean success = bookService.addBook(book);
+        
+        if (success) {
+            // Reload books from database to get the updated list with IDs
+            loadBooksFromDatabase();
+            
+            String note = notesArea.getText();
+            if (note != null && !note.isBlank()) {
+                bookNotes.put(book.getId(), note.trim());
+            }
+            
+            // Refresh grid
+            renderBooks(); 
+            
+            clearFormFields();
+            AlertUtils.showInfo("Book saved", "Book \"%s\" has been added to the database.".formatted(book.getTitle()));
+        } else {
+            AlertUtils.showError("Error", "Failed to save book to database. Please try again.");
         }
-        
-        // Refresh grid
-        renderBooks(); 
-        
-        clearFormFields();
-        AlertUtils.showInfo("Book saved", "Book \"%s\" has been added.".formatted(book.getTitle()));
     }
 
     @FXML
@@ -299,10 +300,11 @@ public class BooksController {
         User currentUser = UserService.getInstance().getCurrentUser();
         if (currentUser != null) {
             borrowerField.setText(currentUser.getFullName());
-            borrowerField.setEditable(false);
+            // REMOVE: borrowerField.setEditable(false);
         } else {
             borrowerField.setPromptText("Borrower Name");
         }
+        borrowerField.setEditable(true); // Always allow editing
 
         DatePicker startDatePicker = new DatePicker(LocalDate.now());
         DatePicker endDatePicker = new DatePicker(LocalDate.now().plusDays(7));
@@ -341,13 +343,45 @@ public class BooksController {
 
         dialog.setResultConverter(dialogButton -> {
             if (dialogButton == reserveButtonType) {
-                User user = currentUser; 
-                if (user == null) {
-                    user = new User(0, borrowerField.getText(), "", "", ""); 
+                // Get or create user for the reservation
+                String borrowerName = borrowerField.getText().trim();
+                User user = null;
+                
+                // First, try to use current logged-in user
+                if (currentUser != null && currentUser.getFullName().equals(borrowerName)) {
+                    user = currentUser;
+                } else {
+                    // Try to find user by name or create new one
+                    UserDAO userDAO = new UserDAO();
+                    // Try to find by email if it looks like an email
+                    if (borrowerName.contains("@")) {
+                        user = userDAO.getUserByEmail(borrowerName);
+                    }
+                    
+                    // If not found, create a new user
+                    if (user == null) {
+                        String[] nameParts = borrowerName.split(" ", 2);
+                        String firstName = nameParts.length > 0 ? nameParts[0] : borrowerName;
+                        String lastName = nameParts.length > 1 ? nameParts[1] : "";
+                        String email = borrowerName.toLowerCase().replace(" ", ".") + "@library.local";
+                        
+                        user = new User(0, firstName, lastName, email, "");
+                        int userId = userDAO.insertUser(user);
+                        if (userId <= 0) {
+                            AlertUtils.showError("Error", "Could not create user in database.");
+                            return null;
+                        }
+                        // User is now in database with valid ID
+                    }
+                }
+                
+                if (user == null || user.getId() == 0) {
+                    AlertUtils.showError("Error", "Could not create or find user for reservation.");
+                    return null;
                 }
                 
                 return new Reservation(
-                        (int)(System.currentTimeMillis()/1000), 
+                        0, // ID will be set by database
                         user,
                         book,
                         startDatePicker.getValue(),
@@ -363,7 +397,7 @@ public class BooksController {
 
         result.ifPresent(reservation -> {
             ReservationService.getInstance().addReservation(reservation);
-            AlertUtils.showInfo("Success", "Book reserved successfully!");
+            AlertUtils.showInfo("Success", "Book reserved successfully and saved to database!");
             renderBooks(); // Refresh to show updated status
         });
     }

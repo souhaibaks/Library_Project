@@ -5,7 +5,9 @@ import com.library.models.Reservation;
 import com.library.models.User;
 import com.library.utils.AlertUtils;
 import com.library.utils.DateUtils;
+import com.library.services.BookService;
 import com.library.services.ReservationService;
+import com.library.services.UserService;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -24,7 +26,6 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Demo controller that wires reservation.fxml to an in-memory list of reservations.
@@ -71,16 +72,17 @@ public class ReservationController {
     private final ObservableList<User> userOptions = FXCollections.observableArrayList();
     private final ObservableList<Book> bookOptions = FXCollections.observableArrayList();
     private final Map<Integer, String> reservationNotes = new HashMap<>();
-    private static final AtomicInteger ID_GENERATOR = new AtomicInteger(4000);
     private final ReservationService reservationService = ReservationService.getInstance();
+    private final BookService bookService = BookService.getInstance();
+    private final UserService userService = UserService.getInstance();
     private FilteredList<Reservation> filteredReservations;
 
     @FXML
     private void initialize() {
+        loadDataFromDatabase();
         configureChoiceBoxes();
         configureTable();
         setupFiltering();
-        seedSampleData();
         reservationsTable.getSelectionModel().selectedItemProperty().addListener(
                 (obs, oldSelection, newSelection) -> {
                     if (newSelection != null) {
@@ -88,6 +90,21 @@ public class ReservationController {
                     }
                 }
         );
+    }
+    
+    /**
+     * Loads books, users, and reservations from the database
+     */
+    private void loadDataFromDatabase() {
+        // Load books from database
+        bookOptions.clear();
+        bookOptions.addAll(bookService.getBooks());
+        
+        // Load users from database
+        userOptions.clear();
+        userOptions.addAll(userService.getAllUsers());
+        
+        // Reservations are already loaded by ReservationService
     }
 
     private void configureChoiceBoxes() {
@@ -157,57 +174,6 @@ public class ReservationController {
         reservationsTable.setItems(sortedReservations);
     }
 
-    private void seedSampleData() {
-        if (!reservationService.getReservations().isEmpty()) {
-            return;
-        }
-
-        // Sample catalog and patrons
-        bookOptions.addAll(
-                new Book(2001, "Designing Data-Intensive Applications", "Martin Kleppmann",
-                        "9781449373320", LocalDate.of(2017, 3, 16), 616, "Programming", "O'Reilly"),
-                new Book(2002, "Refactoring", "Martin Fowler",
-                        "9780134757599", LocalDate.of(2018, 11, 20), 448, "Programming", "Addison-Wesley"),
-                new Book(2003, "Head First Design Patterns", "Eric Freeman",
-                        "9780596007126", LocalDate.of(2004, 10, 25), 694, "Programming", "O'Reilly")
-        );
-        userOptions.addAll(
-                new User(301, "Sofia", "Ramirez", "sofia@library.local", "555-0140"),
-                new User(302, "Ethan", "Khan", "ethan@library.local", "555-0150"),
-                new User(303, "Maya", "Chen", "maya@library.local", "555-0160")
-        );
-
-        Reservation reservationOne = new Reservation(
-                ID_GENERATOR.getAndIncrement(),
-                userOptions.get(0),
-                bookOptions.get(0),
-                LocalDate.now().minusDays(2),
-                LocalDate.now().plusDays(12),
-                null,
-                Reservation.ReservationStatus.ACTIVE
-        );
-        Reservation reservationTwo = new Reservation(
-                ID_GENERATOR.getAndIncrement(),
-                userOptions.get(1),
-                bookOptions.get(1),
-                LocalDate.now().minusDays(20),
-                LocalDate.now().minusDays(5),
-                LocalDate.now().minusDays(3),
-                Reservation.ReservationStatus.RETURNED
-        );
-        Reservation reservationThree = new Reservation(
-                ID_GENERATOR.getAndIncrement(),
-                userOptions.get(2),
-                bookOptions.get(2),
-                LocalDate.now().minusDays(15),
-                LocalDate.now().minusDays(1),
-                null,
-                Reservation.ReservationStatus.OVERDUE
-        );
-
-        reservationService.getReservations().addAll(reservationOne, reservationTwo, reservationThree);
-        reservationNotes.put(reservationThree.getId(), "Send reminder email tomorrow.");
-    }
 
     @FXML
     private void onAddReservation() {
@@ -247,7 +213,7 @@ public class ReservationController {
         }
 
         Reservation reservation = new Reservation(
-                ID_GENERATOR.getAndIncrement(),
+                0, // ID will be set by database
                 userPicker.getValue(),
                 itemPicker.getValue(),
                 reservationDate,
@@ -257,6 +223,10 @@ public class ReservationController {
         );
 
         reservationService.addReservation(reservation);
+        
+        // Refresh reservations from database to get updated list
+        reservationService.refresh();
+        
         String note = notesArea.getText();
         if (note != null && !note.isBlank()) {
             reservationNotes.put(reservation.getId(), note.trim());
@@ -264,7 +234,7 @@ public class ReservationController {
         reservationsTable.getSelectionModel().select(reservation);
         clearForm();
         AlertUtils.showInfo("Reservation created",
-                "Reserved \"%s\" for %s."
+                "Reserved \"%s\" for %s and saved to database."
                         .formatted(reservation.getItem().getTitle(), reservation.getUser().getFullName()));
     }
 
@@ -280,12 +250,16 @@ public class ReservationController {
             return;
         }
         selected.markAsReturned();
+        
+        // Update in database
+        reservationService.updateReservation(selected);
+        
         reservationNotes.put(selected.getId(),
                 "Marked as returned on %s".formatted(DateUtils.format(selected.getReturnDate())));
         reservationsTable.refresh();
         populateForm(selected);
         AlertUtils.showInfo("Reservation updated",
-                "Reservation #%d is now returned.".formatted(selected.getId()));
+                "Reservation #%d is now returned and updated in database.".formatted(selected.getId()));
     }
 
     @FXML

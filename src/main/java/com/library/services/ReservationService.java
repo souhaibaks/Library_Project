@@ -2,6 +2,7 @@ package com.library.services;
 
 import com.library.models.LibraryItem;
 import com.library.models.Reservation;
+import com.library.models.ReservationDAO;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
@@ -14,10 +15,13 @@ public class ReservationService {
     private static ReservationService instance;
     private final IntervalScheduler scheduler;
     private final ObservableList<Reservation> reservations;
+    private final ReservationDAO reservationDAO;
 
     private ReservationService() {
         this.scheduler = new IntervalScheduler();
         this.reservations = FXCollections.observableArrayList();
+        this.reservationDAO = new ReservationDAO();
+        loadReservationsFromDatabase();
     }
 
     public static synchronized ReservationService getInstance() {
@@ -27,12 +31,39 @@ public class ReservationService {
         return instance;
     }
 
+    /**
+     * Loads all reservations from the database
+     */
+    private void loadReservationsFromDatabase() {
+        List<Reservation> reservationList = reservationDAO.getAllReservations();
+        reservations.clear();
+        reservations.addAll(reservationList);
+    }
+
     public ObservableList<Reservation> getReservations() {
         return reservations;
     }
 
+    /**
+     * Adds a reservation and saves it to the database
+     */
     public void addReservation(Reservation reservation) {
-        reservations.add(reservation);
+        int id = reservationDAO.insertReservation(reservation);
+        if (id > 0) {
+            reservations.add(reservation);
+        }
+    }
+
+    /**
+     * Updates a reservation in the database
+     */
+    public boolean updateReservation(Reservation reservation) {
+        if (reservationDAO.updateReservation(reservation)) {
+            // Refresh the list
+            loadReservationsFromDatabase();
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -48,11 +79,17 @@ public class ReservationService {
         // Filter reservations for this specific item
         List<Reservation> itemReservations = allReservations.stream()
                 .filter(r -> r.getItem().getId() == item.getId())
+                .filter(r -> r.getStatus() == Reservation.ReservationStatus.ACTIVE)
                 .collect(Collectors.toList());
 
         // Check for conflicts
         return !scheduler.hasConflict(itemReservations, start, end);
     }
 
-    // Future: Methods to save to DB
+    /**
+     * Refreshes the reservations list from the database
+     */
+    public void refresh() {
+        loadReservationsFromDatabase();
+    }
 }
