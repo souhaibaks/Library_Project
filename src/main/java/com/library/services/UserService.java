@@ -109,4 +109,17 @@ public class UserService {
     public boolean updateUser(User user) {
         return userDAO.updateUser(user);
     }
+    
+    /**
+     * Refreshes user data from the database (for consistency, though users don't change often)
+     */
+    public void refresh() {
+        // Refresh current user if logged in
+        if (currentUser != null) {
+            User refreshed = userDAO.getUserById(currentUser.getId());
+            if (refreshed != null) {
+                currentUser = refreshed;
+            }
+        }
+    }
 }

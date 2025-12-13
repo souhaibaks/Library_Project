@@ -38,11 +38,6 @@
                         <fx:include source="reservation.fxml" />
                     </content>
                 </Tab>
-                <Tab text="Activity History">
-                    <content>
-                        <fx:include source="history.fxml" />
-                    </content>
-                </Tab>
             </tabs>
         </TabPane>
     </center>

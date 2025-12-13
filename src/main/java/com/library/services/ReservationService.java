@@ -35,9 +35,32 @@ public class ReservationService {
      * Loads all reservations from the database
      */
     private void loadReservationsFromDatabase() {
-        List<Reservation> reservationList = reservationDAO.getAllReservations();
-        reservations.clear();
-        reservations.addAll(reservationList);
+        try {
+            System.out.println("ReservationService: Starting to load reservations from database...");
+            System.out.flush();
+            
+            // Run diagnostic first to help debug issues
+            reservationDAO.diagnoseReservationsTable();
+            System.out.flush();
+            
+            List<Reservation> reservationList = reservationDAO.getAllReservations();
+            System.out.println("ReservationService: Got " + (reservationList != null ? reservationList.size() : 0) + " reservations from DAO");
+            System.out.flush();
+            
+            // Use setAll instead of clear+addAll for better ObservableList change notifications
+            if (reservationList != null && !reservationList.isEmpty()) {
+                reservations.setAll(reservationList);
+                System.out.println("ReservationService: Loaded " + reservationList.size() + " reservations into memory.");
+                System.out.println("ReservationService: ObservableList now contains " + reservations.size() + " items");
+            } else {
+                reservations.clear();
+                System.out.println("ReservationService: No reservations found in database. ObservableList cleared.");
+            }
+            System.out.flush();
+        } catch (Exception e) {
+            System.err.println("Error loading reservations in ReservationService: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 
     public ObservableList<Reservation> getReservations() {
@@ -51,6 +74,10 @@ public class ReservationService {
         int id = reservationDAO.insertReservation(reservation);
         if (id > 0) {
             reservations.add(reservation);
+            // Update the item's availability status in memory immediately
+            if (reservation.getItem() != null) {
+                reservation.getItem().setAvailable(false);
+            }
         }
     }
 

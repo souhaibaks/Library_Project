@@ -76,15 +76,20 @@ public class LibraryItemDAO {
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             
-            pstmt.setString(1, book.getTitle());
-            pstmt.setString(2, book.getAuthor());
-            pstmt.setString(3, book.getIsbn());
+            pstmt.setString(1, book.getTitle() != null ? book.getTitle() : "");
+            pstmt.setString(2, book.getAuthor() != null ? book.getAuthor() : "");
+            // Handle null or empty ISBN - set to null if empty to avoid unique constraint issues
+            String isbn = book.getIsbn();
+            if (isbn != null && isbn.trim().isEmpty()) {
+                isbn = null;
+            }
+            pstmt.setString(3, isbn);
             pstmt.setDate(4, book.getPublicationDate() != null ? 
                          Date.valueOf(book.getPublicationDate()) : null);
             pstmt.setBoolean(5, book.isAvailable());
             pstmt.setInt(6, book.getNumberOfPages());
-            pstmt.setString(7, book.getGenre());
-            pstmt.setString(8, book.getPublisher());
+            pstmt.setString(7, book.getGenre() != null ? book.getGenre() : "");
+            pstmt.setString(8, book.getPublisher() != null ? book.getPublisher() : "");
             
             int affectedRows = pstmt.executeUpdate();
             
@@ -99,7 +104,10 @@ public class LibraryItemDAO {
             }
         } catch (SQLException e) {
             System.err.println("Error inserting book: " + e.getMessage());
+            System.err.println("SQL State: " + e.getSQLState());
+            System.err.println("Error Code: " + e.getErrorCode());
             e.printStackTrace();
+            // Return -1 to indicate failure, let the service layer handle the error message
         }
         
         return -1;

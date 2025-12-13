@@ -82,6 +82,48 @@ public class UserDAO {
     }
     
     /**
+     * Finds a user by full name (first name and last name)
+     * Returns the first matching user if found
+     */
+    public User getUserByName(String fullName) {
+        if (fullName == null || fullName.trim().isEmpty()) {
+            return null;
+        }
+        
+        String[] nameParts = fullName.trim().split("\\s+", 2);
+        String firstName = nameParts[0];
+        String lastName = nameParts.length > 1 ? nameParts[1] : "";
+        
+        String sql;
+        PreparedStatement pstmt;
+        
+        try (Connection conn = DBConnection.getConnection()) {
+            if (lastName.isEmpty()) {
+                // Search by first name only
+                sql = "SELECT * FROM users WHERE first_name = ? LIMIT 1";
+                pstmt = conn.prepareStatement(sql);
+                pstmt.setString(1, firstName);
+            } else {
+                // Search by both first and last name
+                sql = "SELECT * FROM users WHERE first_name = ? AND last_name = ? LIMIT 1";
+                pstmt = conn.prepareStatement(sql);
+                pstmt.setString(1, firstName);
+                pstmt.setString(2, lastName);
+            }
+            
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return mapResultSetToUser(rs);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error fetching user by name: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return null;
+    }
+    
+    /**
      * Inserts a new user into the database
      * Note: The database doesn't store passwords, so password handling is done separately
      */

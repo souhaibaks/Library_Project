@@ -81,7 +81,8 @@ public class BookService {
     public boolean addBook(Book book) {
         int id = itemDAO.insertBook(book);
         if (id > 0) {
-            books.add(book);
+            // Refresh from database to ensure consistency
+            loadBooksFromDatabase();
             return true;
         }
         return false;

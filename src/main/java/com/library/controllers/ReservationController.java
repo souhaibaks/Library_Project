@@ -1,6 +1,8 @@
 package com.library.controllers;
 
 import com.library.models.Book;
+import com.library.models.LibraryItem;
+import com.library.models.Magazine;
 import com.library.models.Reservation;
 import com.library.models.User;
 import com.library.utils.AlertUtils;
@@ -8,8 +10,10 @@ import com.library.utils.DateUtils;
 import com.library.services.BookService;
 import com.library.services.ReservationService;
 import com.library.services.UserService;
+import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
@@ -57,7 +61,7 @@ public class ReservationController {
     @FXML
     private ComboBox<User> userPicker;
     @FXML
-    private ComboBox<Book> itemPicker;
+    private ComboBox<LibraryItem> itemPicker;
     @FXML
     private DatePicker reservationDatePicker;
     @FXML
@@ -70,7 +74,7 @@ public class ReservationController {
     private TextArea notesArea;
 
     private final ObservableList<User> userOptions = FXCollections.observableArrayList();
-    private final ObservableList<Book> bookOptions = FXCollections.observableArrayList();
+    private final ObservableList<LibraryItem> itemOptions = FXCollections.observableArrayList();
     private final Map<Integer, String> reservationNotes = new HashMap<>();
     private final ReservationService reservationService = ReservationService.getInstance();
     private final BookService bookService = BookService.getInstance();
@@ -79,10 +83,32 @@ public class ReservationController {
 
     @FXML
     private void initialize() {
+        // IMPORTANT: Load items and users first, then reservations
+        // This ensures that when reservations are loaded, their associated items/users exist
+        System.out.println("ReservationController: Initializing...");
+        bookService.refresh();
+        userService.refresh();
+        
         loadDataFromDatabase();
         configureChoiceBoxes();
         configureTable();
+        
+        // Setup filtering and table binding BEFORE loading reservations
         setupFiltering();
+        
+        // Add listener to update table when reservations change
+        reservationService.getReservations().addListener((ListChangeListener<Reservation>) change -> {
+            System.out.println("ReservationController: Reservations list changed. Current size: " + reservationService.getReservations().size());
+            Platform.runLater(() -> {
+                reservationsTable.refresh();
+                System.out.println("ReservationController: Table refreshed. Table items count: " + reservationsTable.getItems().size());
+            });
+        });
+        
+        // Load reservations from database AFTER setting up the table
+        System.out.println("ReservationController: Loading reservations from database...");
+        reservationService.refresh();
+        
         reservationsTable.getSelectionModel().selectedItemProperty().addListener(
                 (obs, oldSelection, newSelection) -> {
                     if (newSelection != null) {
@@ -90,15 +116,25 @@ public class ReservationController {
                     }
                 }
         );
+        
+        // Debug: Print reservation count
+        System.out.println("ReservationController: Initialization complete. Total reservations: " + reservationService.getReservations().size());
+        System.out.println("ReservationController: Table items count: " + reservationsTable.getItems().size());
+        
+        // Force table refresh after a short delay to ensure data is loaded
+        Platform.runLater(() -> {
+            reservationsTable.refresh();
+            System.out.println("ReservationController: Final table refresh. Items: " + reservationsTable.getItems().size());
+        });
     }
     
     /**
-     * Loads books, users, and reservations from the database
+     * Loads books, magazines, users, and reservations from the database
      */
     private void loadDataFromDatabase() {
-        // Load books from database
-        bookOptions.clear();
-        bookOptions.addAll(bookService.getBooks());
+        // Load all items (books and magazines) from database
+        itemOptions.clear();
+        itemOptions.addAll(bookService.getAllItems());
         
         // Load users from database
         userOptions.clear();
@@ -121,15 +157,21 @@ public class ReservationController {
             }
         });
 
-        itemPicker.setItems(bookOptions);
+        itemPicker.setItems(itemOptions);
         itemPicker.setConverter(new StringConverter<>() {
             @Override
-            public String toString(Book book) {
-                return book == null ? "" : "%s — %s".formatted(book.getTitle(), book.getAuthor());
+            public String toString(LibraryItem item) {
+                if (item == null) return "";
+                if (item instanceof Book book) {
+                    return "%s — %s (Book)".formatted(book.getTitle(), book.getAuthor());
+                } else if (item instanceof Magazine magazine) {
+                    return "%s — %s (Magazine)".formatted(magazine.getTitle(), magazine.getAuthor());
+                }
+                return item.getTitle() + " — " + item.getAuthor();
             }
 
             @Override
-            public Book fromString(String string) {
+            public LibraryItem fromString(String string) {
                 return null;
             }
         });
@@ -156,7 +198,9 @@ public class ReservationController {
     }
 
     private void setupFiltering() {
+        // Recreate FilteredList to ensure it's bound to the current reservations list
         filteredReservations = new FilteredList<>(reservationService.getReservations(), reservation -> true);
+        
         searchField.textProperty().addListener((obs, oldValue, newValue) -> {
             String searchTerm = newValue == null ? "" : newValue.trim().toLowerCase(Locale.ENGLISH);
             filteredReservations.setPredicate(reservation -> {
@@ -172,6 +216,16 @@ public class ReservationController {
         SortedList<Reservation> sortedReservations = new SortedList<>(filteredReservations);
         sortedReservations.comparatorProperty().bind(reservationsTable.comparatorProperty());
         reservationsTable.setItems(sortedReservations);
+        
+        // Force table refresh to ensure it displays the data
+        reservationsTable.refresh();
+    }
+    
+    /**
+     * Refreshes the table by re-binding it to the reservations list
+     */
+    private void refreshTable() {
+        setupFiltering();
     }
 
 
@@ -224,8 +278,14 @@ public class ReservationController {
 
         reservationService.addReservation(reservation);
         
-        // Refresh reservations from database to get updated list
+        // Refresh items from database to get updated availability status
+        bookService.refresh();
+        
+        // Refresh reservations from database to get updated list with IDs
         reservationService.refresh();
+        
+        // Re-bind table to show the updated reservations
+        refreshTable();
         
         String note = notesArea.getText();
         if (note != null && !note.isBlank()) {
@@ -252,14 +312,31 @@ public class ReservationController {
         selected.markAsReturned();
         
         // Update in database
-        reservationService.updateReservation(selected);
+        boolean success = reservationService.updateReservation(selected);
         
-        reservationNotes.put(selected.getId(),
-                "Marked as returned on %s".formatted(DateUtils.format(selected.getReturnDate())));
-        reservationsTable.refresh();
-        populateForm(selected);
-        AlertUtils.showInfo("Reservation updated",
-                "Reservation #%d is now returned and updated in database.".formatted(selected.getId()));
+        if (success) {
+            // Refresh items to update availability
+            bookService.refresh();
+            
+            reservationNotes.put(selected.getId(),
+                    "Marked as returned on %s".formatted(DateUtils.format(selected.getReturnDate())));
+            
+            // Refresh table to show updated reservation
+            refreshTable();
+            populateForm(selected);
+            AlertUtils.showInfo("Reservation updated",
+                    "Reservation #%d is now returned and updated in database. Item is now available.".formatted(selected.getId()));
+        } else {
+            AlertUtils.showError("Error", "Failed to update reservation in database.");
+        }
+    }
+    
+    /**
+     * Unborrow/Return a library item - same as marking returned but with clearer naming
+     */
+    @FXML
+    private void onUnborrow() {
+        onMarkReturned(); // Reuse the same logic
     }
 
     @FXML
@@ -275,11 +352,7 @@ public class ReservationController {
 
     private void populateForm(Reservation reservation) {
         userPicker.getSelectionModel().select(reservation.getUser());
-        if (reservation.getItem() instanceof Book book) {
-            itemPicker.getSelectionModel().select(book);
-        } else {
-            itemPicker.getSelectionModel().clearSelection();
-        }
+        itemPicker.getSelectionModel().select(reservation.getItem());
         reservationDatePicker.setValue(reservation.getReservationDate());
         dueDatePicker.setValue(reservation.getDueDate());
         returnDatePicker.setValue(reservation.getReturnDate());
