@@ -4,6 +4,10 @@ A comprehensive desktop application for managing library operations, built with 
 
 ## 📋 Features
 
+### Team Members
+- **Mohamed Souhaib Aksikas**
+- **Amine Benali**
+
 ### User Management
 - **User Authentication**: Secure login system with email and password
 - **User Registration**: Create new user accounts with personal information
@@ -307,30 +311,5 @@ Set the `JAVAFX_LIB` environment variable or update the run scripts with your Ja
 - JavaFX ObservableList is used for reactive UI updates
 - Singleton pattern is used for services
 
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📄 License
-
-This project is open source and available for educational purposes.
-
-## 👤 Author
-
-Library Management System - Desktop Application
-
-## 🙏 Acknowledgments
-
-- JavaFX community for excellent documentation
-- MySQL for robust database management
-- Open source contributors
-
----
 
 For detailed database setup instructions, see [DATABASE_SETUP.md](DATABASE_SETUP.md)
