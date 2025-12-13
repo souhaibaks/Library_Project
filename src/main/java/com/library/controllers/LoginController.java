@@ -3,7 +3,6 @@ package com.library.controllers;
 import com.library.models.User;
 import com.library.services.UserService;
 import com.library.utils.AlertUtils;
-import com.library.utils.DateUtils;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -15,11 +14,7 @@ import javafx.scene.control.TextInputControl;
 import javafx.stage.Stage;
 
 import java.io.IOException;
-import java.time.LocalDate;
 
-/**
- * Simple in-memory authentication demo that wires the login.fxml controls.
- */
 public class LoginController {
 
     @FXML
@@ -54,7 +49,7 @@ public class LoginController {
                 FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/library/views/dashboard.fxml"));
                 Parent root = loader.load();
                 Stage stage = (Stage) emailField.getScene().getWindow();
-                stage.setTitle("Library Workspace — " + DateUtils.format(LocalDate.now()));
+                stage.setTitle("Library Portal - Dashboard");
                 stage.setScene(new Scene(root));
             } catch (IOException e) {
                 e.printStackTrace();

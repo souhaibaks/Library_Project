@@ -33,29 +33,16 @@ public class ReservationDAO {
         List<Reservation> reservations = new ArrayList<>();
         String sql = "SELECT * FROM reservations ORDER BY reservation_date DESC";
         
-        System.out.println("ReservationDAO: Starting to fetch reservations from database...");
-        
         try {
             Connection conn = DBConnection.getConnection();
-            if (conn == null) {
-                System.err.println("ReservationDAO: ERROR - Database connection is null!");
+            if (conn == null || conn.isClosed()) {
                 return reservations;
             }
             
-            if (conn.isClosed()) {
-                System.err.println("ReservationDAO: ERROR - Database connection is closed!");
-                return reservations;
-            }
-            
-            System.out.println("ReservationDAO: Database connection established. Executing query: " + sql);
-            
-            // First, collect all raw data from ResultSet before making any other DB calls
             List<ReservationData> rawReservations = new ArrayList<>();
             
             try (Statement stmt = conn.createStatement();
                  ResultSet rs = stmt.executeQuery(sql)) {
-                
-                System.out.println("ReservationDAO: Query executed successfully. Collecting raw data...");
                 
                 while (rs.next()) {
                     ReservationData data = new ReservationData();
@@ -70,46 +57,18 @@ public class ReservationDAO {
                 }
             }
             
-            // Now process all the collected data (ResultSet is closed, safe to make other DB calls)
-            System.out.println("ReservationDAO: Collected " + rawReservations.size() + " raw reservations. Processing...");
-            
-            int totalRows = rawReservations.size();
-            int loadedRows = 0;
-            
             for (ReservationData data : rawReservations) {
-                System.out.println("ReservationDAO: Processing reservation ID=" + data.id + 
-                                 ", user_id=" + data.userId + ", item_id=" + data.itemId);
-                
                 Reservation reservation = buildReservationFromData(data);
                 if (reservation != null) {
                     reservations.add(reservation);
-                    loadedRows++;
-                    System.out.println("ReservationDAO: Successfully loaded reservation ID=" + data.id);
-                } else {
-                    System.err.println("ReservationDAO: Failed to load reservation ID=" + data.id + 
-                                    " (user_id=" + data.userId + ", item_id=" + data.itemId + ")");
                 }
             }
-            
-            System.out.println("ReservationDAO: Loaded " + loadedRows + " out of " + totalRows + " reservations from database.");
-            if (totalRows == 0) {
-                System.out.println("ReservationDAO: No reservations found in database. Table may be empty.");
-            }
-            if (totalRows > loadedRows) {
-                System.err.println("ReservationDAO: WARNING - " + (totalRows - loadedRows) + 
-                                 " reservations were skipped due to missing users or items.");
-            }
         } catch (SQLException e) {
-            System.err.println("ReservationDAO: SQL Error fetching reservations: " + e.getMessage());
-            System.err.println("ReservationDAO: SQL State: " + e.getSQLState());
-            System.err.println("ReservationDAO: Error Code: " + e.getErrorCode());
-            e.printStackTrace();
+            System.err.println("Error fetching reservations: " + e.getMessage());
         } catch (Exception e) {
-            System.err.println("ReservationDAO: Unexpected error fetching reservations: " + e.getMessage());
-            e.printStackTrace();
+            System.err.println("Unexpected error: " + e.getMessage());
         }
         
-        System.out.println("ReservationDAO: Returning " + reservations.size() + " reservations.");
         return reservations;
     }
     
@@ -161,17 +120,9 @@ public class ReservationDAO {
         String sql = "INSERT INTO reservations (user_id, item_id, reservation_date, due_date, return_date, status) " +
                      "VALUES (?, ?, ?, ?, ?, ?)";
         
-        System.out.println("ReservationDAO: Attempting to insert reservation...");
-        System.out.println("  User ID: " + (reservation.getUser() != null ? reservation.getUser().getId() : "null"));
-        System.out.println("  Item ID: " + (reservation.getItem() != null ? reservation.getItem().getId() : "null"));
-        System.out.println("  Reservation Date: " + reservation.getReservationDate());
-        System.out.println("  Due Date: " + reservation.getDueDate());
-        System.out.println("  Status: " + reservation.getStatus());
-        
         try {
             Connection conn = DBConnection.getConnection();
             if (conn == null) {
-                System.err.println("ReservationDAO: ERROR - Connection is null when inserting!");
                 return -1;
             }
             
@@ -188,40 +139,24 @@ public class ReservationDAO {
                 pstmt.setString(6, reservation.getStatus() != null ? 
                                reservation.getStatus().name() : Reservation.ReservationStatus.ACTIVE.name());
                 
-                System.out.println("ReservationDAO: Executing INSERT statement...");
                 int affectedRows = pstmt.executeUpdate();
-                System.out.println("ReservationDAO: INSERT affected " + affectedRows + " row(s)");
                 
                 if (affectedRows > 0) {
                     try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
                         if (generatedKeys.next()) {
                             int id = generatedKeys.getInt(1);
                             reservation.setId(id);
-                            System.out.println("ReservationDAO: Successfully inserted reservation with ID=" + id);
-                            
-                            // Update item availability
                             updateItemAvailability(reservation.getItem().getId(), false);
-                            
                             return id;
-                        } else {
-                            System.err.println("ReservationDAO: WARNING - Insert succeeded but no generated key returned!");
                         }
                     }
-                } else {
-                    System.err.println("ReservationDAO: WARNING - INSERT affected 0 rows. Reservation not saved!");
                 }
             }
         } catch (SQLException e) {
-            System.err.println("ReservationDAO: SQL Error inserting reservation: " + e.getMessage());
-            System.err.println("ReservationDAO: SQL State: " + e.getSQLState());
-            System.err.println("ReservationDAO: Error Code: " + e.getErrorCode());
-            e.printStackTrace();
+            System.err.println("Error inserting reservation: " + e.getMessage());
         } catch (Exception e) {
-            System.err.println("ReservationDAO: Unexpected error inserting reservation: " + e.getMessage());
-            e.printStackTrace();
+            System.err.println("Unexpected error: " + e.getMessage());
         }
-        
-        System.err.println("ReservationDAO: Failed to insert reservation. Returning -1.");
         return -1;
     }
     

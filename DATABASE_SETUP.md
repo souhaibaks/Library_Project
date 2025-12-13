@@ -44,10 +44,22 @@ mysql -u root -p
    mysql -u root -p
    ```
 
-2. Run the setup script:
+2. Navigate to your project directory and run the setup script:
    ```sql
-   source C:/Users/AMBEN/Desktop/Library_Project/database_setup.sql
+   source /path/to/your/project/database_setup.sql
    ```
+   
+   **Windows example:**
+   ```sql
+   source C:/path/to/Library_Project/database_setup.sql
+   ```
+   
+   **macOS/Linux example:**
+   ```sql
+   source /home/username/projects/Library_Project/database_setup.sql
+   ```
+   
+   **Note:** Replace the path with your actual project directory path
    
    Or copy and paste the contents of `database_setup.sql` into MySQL command line
 
@@ -84,14 +96,26 @@ You should see:
 
 ### Run the Test:
 ```bash
-# Compile
-javac -cp "C:/Users/AMBEN/Desktop/mysql-connector-j-8.0.33.jar" -d out src/main/java/com/library/TestConnection.java src/main/java/com/library/models/DBConnection.java
+# Compile (replace with your actual path to the MySQL connector JAR)
+javac -cp "/path/to/mysql-connector-j-8.0.33.jar" -d out src/main/java/com/library/TestConnection.java src/main/java/com/library/models/DBConnection.java
 
 # Run
-java -cp "C:/Users/AMBEN/Desktop/mysql-connector-j-8.0.33.jar" com.library.TestConnection
+java -cp "/path/to/mysql-connector-j-8.0.33.jar:out" com.library.TestConnection
 ```
 
-Or run `TestConnection.java` from your IDE.
+**Windows example:**
+```bash
+javac -cp "C:\path\to\mysql-connector-j-8.0.33.jar" -d out src\main\java\com\library\TestConnection.java src\main\java\com\library\models\DBConnection.java
+java -cp "C:\path\to\mysql-connector-j-8.0.33.jar;out" com.library.TestConnection
+```
+
+**macOS/Linux example:**
+```bash
+javac -cp "/path/to/mysql-connector-j-8.0.33.jar" -d out src/main/java/com/library/TestConnection.java src/main/java/com/library/models/DBConnection.java
+java -cp "/path/to/mysql-connector-j-8.0.33.jar:out" com.library.TestConnection
+```
+
+**Note:** The `TestConnection.java` file has been removed from the project. You can test the connection by running the application directly.
 
 ## Step 7: Configure Connection (if needed)
 

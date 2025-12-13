@@ -54,37 +54,22 @@ public class ReservationController {
 
     @FXML
     private void initialize() {
-        // Load reservations from database
-        System.out.println("ReservationController: Initializing...");
         bookService.refresh();
         userService.refresh();
         
         configureTable();
-        
-        // Setup filtering and table binding BEFORE loading reservations
         setupFiltering();
         
-        // Add listener to update table when reservations change
         reservationService.getReservations().addListener((ListChangeListener<Reservation>) change -> {
-            System.out.println("ReservationController: Reservations list changed. Current size: " + reservationService.getReservations().size());
             Platform.runLater(() -> {
                 reservationsTable.refresh();
-                System.out.println("ReservationController: Table refreshed. Table items count: " + reservationsTable.getItems().size());
             });
         });
         
-        // Load reservations from database AFTER setting up the table
-        System.out.println("ReservationController: Loading reservations from database...");
         reservationService.refresh();
         
-        // Debug: Print reservation count
-        System.out.println("ReservationController: Initialization complete. Total reservations: " + reservationService.getReservations().size());
-        System.out.println("ReservationController: Table items count: " + reservationsTable.getItems().size());
-        
-        // Force table refresh after a short delay to ensure data is loaded
         Platform.runLater(() -> {
             reservationsTable.refresh();
-            System.out.println("ReservationController: Final table refresh. Items: " + reservationsTable.getItems().size());
         });
     }
 

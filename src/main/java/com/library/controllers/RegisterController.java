@@ -3,7 +3,6 @@ package com.library.controllers;
 import com.library.models.User;
 import com.library.services.UserService;
 import com.library.utils.AlertUtils;
-import com.library.utils.DateUtils;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -13,7 +12,6 @@ import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
 import java.io.IOException;
-import java.time.LocalDate;
 
 public class RegisterController {
 
@@ -66,7 +64,7 @@ public class RegisterController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/library/views/dashboard.fxml"));
             Parent root = loader.load();
             Stage stage = (Stage) emailField.getScene().getWindow();
-            stage.setTitle("Library Workspace — " + DateUtils.format(LocalDate.now()));
+            stage.setTitle("Library Portal - Dashboard");
             stage.setScene(new Scene(root));
         } catch (IOException e) {
             e.printStackTrace();
@@ -79,7 +77,7 @@ public class RegisterController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/library/views/login.fxml"));
             Parent root = loader.load();
             Stage stage = (Stage) emailField.getScene().getWindow();
-            stage.setTitle("Library Portal — Login");
+            stage.setTitle("Library Portal - Login");
             stage.setScene(new Scene(root));
         } catch (IOException e) {
             e.printStackTrace();
