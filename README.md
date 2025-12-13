@@ -130,14 +130,29 @@ Or place JavaFX JARs in the `lib` or `lib_win` directory in the project root.
 
 ## ▶️ Running the Application
 
-### Windows (PowerShell)
+### Windows
 
+**Recommended: Use the Windows-specific script**
 ```powershell
-.\run.ps1
+powershell -ExecutionPolicy Bypass -File .\run-windows.ps1
 ```
 
-### macOS/Linux (Bash)
+**Or use the generic script:**
+```powershell
+powershell -ExecutionPolicy Bypass -File .\run.ps1
+```
 
+**Note:** If you get an execution policy error, use the `-ExecutionPolicy Bypass` flag as shown above.
+
+### macOS/Linux
+
+**Recommended: Use the macOS-specific script**
+```bash
+chmod +x run-macos.sh
+./run-macos.sh
+```
+
+**Or use the generic script:**
 ```bash
 chmod +x run.sh
 ./run.sh
@@ -210,8 +225,10 @@ Library_Project/
 │                   └── style.css           # Application styles
 ├── database_setup.sql                      # Database schema and setup
 ├── DATABASE_SETUP.md                      # Detailed database setup guide
-├── run.sh                                  # Linux/macOS run script
-├── run.ps1                                 # Windows PowerShell run script
+├── run.sh                                  # Generic Linux/macOS run script
+├── run-macos.sh                            # macOS-specific run script
+├── run.ps1                                 # Generic Windows PowerShell run script
+├── run-windows.ps1                         # Windows-specific run script
 └── README.md                               # This file
 ```
 
@@ -295,8 +312,14 @@ Set the `JAVAFX_LIB` environment variable or update the run scripts with your Ja
 
 **"JavaFX modules not found"**
 - Set `JAVAFX_LIB` environment variable
-- Or place JavaFX JARs in `lib` directory
+- Or place JavaFX JARs in `lib` or `lib_win` directory
 - Verify JavaFX SDK version matches (17.x)
+
+**"Graphics pipeline error" (Windows)**
+- The `run-windows.ps1` script uses software renderer which should work
+- If issues persist, download full JavaFX SDK with native DLLs from https://openjfx.io/
+- Extract the full SDK (including `bin` directory with DLL files)
+- Set `JAVAFX_LIB` to point to the SDK's `lib` directory
 
 **"ClassNotFoundException"**
 - Ensure all dependencies are in classpath

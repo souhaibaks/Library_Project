@@ -20,7 +20,7 @@ if (-not $MYSQL_DRIVER) {
   }
 }
 
-# Check common locations (optional - users can set MYSQL_DRIVER env var instead)
+# Check common locations
 if (-not $MYSQL_DRIVER) {
   $commonPaths = @(
     "$env:USERPROFILE\Downloads\mysql-connector-j*.jar",
@@ -46,33 +46,17 @@ if ($MYSQL_DRIVER) {
   Write-Host "Database features will not work without the driver."
 }
 
-# --- Run-only mode ---
-if ($args -contains "-RunOnly") {
-  if (-not $JAVAFX_LIB) {
-    if (Test-Path "lib") { $JAVAFX_LIB = (Resolve-Path "lib").Path } else { Write-Host "Error: JavaFX SDK not found. Set JAVAFX_LIB or provide lib directory."; exit 1 }
-  }
-  if (-not (Test-Path $JAVAFX_LIB)) { Write-Host "Error: JavaFX SDK not found at $JAVAFX_LIB"; exit 1 }
-  Write-Host "Running application (run-only mode)..."
-  $javaArgs = @(
-    "--module-path", "$JAVAFX_LIB",
-    "--add-modules", "javafx.controls,javafx.fxml,javafx.graphics"
-  )
-  if ($JAVAFX_BIN) {
-    $javaArgs += "-Djava.library.path=$JAVAFX_BIN"
-  }
-  $javaArgs += "-cp", "$CLASSPATH", "com.library.Main"
-  & java $javaArgs
-  exit $LASTEXITCODE
-}
-
+# Find JavaFX SDK - Windows version
 if (-not $JAVAFX_LIB) {
   # Try lib_win first (Windows-specific), then lib
   if (Test-Path "lib_win") { 
     $JAVAFX_LIB = (Resolve-Path "lib_win").Path 
+    Write-Host "Using Windows JavaFX libraries from lib_win"
   } elseif (Test-Path "lib") { 
     $JAVAFX_LIB = (Resolve-Path "lib").Path 
+    Write-Host "Using JavaFX libraries from lib"
   } else { 
-    Write-Host "Error: JavaFX SDK not found. Set JAVAFX_LIB or provide lib/lib_win directory."; exit 1 
+    Write-Host "Error: JavaFX SDK not found. Set JAVAFX_LIB or provide lib_win/lib directory."; exit 1 
   }
 }
 if (-not (Test-Path $JAVAFX_LIB)) { Write-Host "Error: JavaFX SDK not found at $JAVAFX_LIB"; exit 1 }
@@ -80,13 +64,34 @@ Write-Host "Using JavaFX SDK at: $JAVAFX_LIB"
 
 # Try to find JavaFX SDK bin directory for native libraries (Windows)
 $JAVAFX_BIN = $null
-if ($JAVAFX_LIB -like "*\lib" -or $JAVAFX_LIB -like "*/lib") {
+if ($JAVAFX_LIB -like "*\lib_win" -or $JAVAFX_LIB -like "*/lib_win") {
+  $possibleBin = $JAVAFX_LIB -replace "\\lib_win$", "\bin" -replace "/lib_win$", "/bin"
+  if (Test-Path $possibleBin) {
+    $JAVAFX_BIN = $possibleBin
+  }
+} elseif ($JAVAFX_LIB -like "*\lib" -or $JAVAFX_LIB -like "*/lib") {
   $possibleBin = $JAVAFX_LIB -replace "\\lib$", "\bin" -replace "/lib$", "/bin"
   if (Test-Path $possibleBin) {
     $JAVAFX_BIN = $possibleBin
-    Write-Host "Found JavaFX bin directory: $JAVAFX_BIN"
   }
 }
+
+# Check for full JavaFX SDK installation
+if (-not $JAVAFX_BIN) {
+  $possibleSDKPaths = @(
+    "$env:ProgramFiles\Java\javafx-sdk-17\bin",
+    "$env:LOCALAPPDATA\Programs\Java\javafx-sdk-17\bin",
+    "C:\Program Files\Java\javafx-sdk-17\bin"
+  )
+  foreach ($sdkPath in $possibleSDKPaths) {
+    if (Test-Path $sdkPath) {
+      $JAVAFX_BIN = $sdkPath
+      Write-Host "Found JavaFX SDK bin directory: $JAVAFX_BIN"
+      break
+    }
+  }
+}
+
 New-Item -ItemType Directory -Force -Path "bin" | Out-Null
 Get-ChildItem "bin" -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
 Write-Host "Finding source files..."
@@ -97,18 +102,43 @@ if ($LASTEXITCODE -eq 0) {
   Write-Host "Compilation successful."
   Remove-Item "sources.txt" -Force
   Write-Host "Running application..."
+  
+  # Build Java arguments for Windows
   $javaArgs = @(
     "--module-path", "$JAVAFX_LIB",
     "--add-modules", "javafx.controls,javafx.fxml,javafx.graphics"
   )
+  
+  # Add native library path if found
   if ($JAVAFX_BIN) {
     $javaArgs += "-Djava.library.path=$JAVAFX_BIN"
   }
-  # Add system properties to help with graphics pipeline
+  
+  # Windows-specific graphics pipeline settings
+  # Use software renderer which works without native DLLs
   $javaArgs += "-Dprism.order=sw"
-  $javaArgs += "-Dprism.forceUploadingPainter=true"
+  $javaArgs += "-Djava.awt.headless=false"
   $javaArgs += "-cp", "$CLASSPATH", "com.library.Main"
+  
+  Write-Host "Starting application with software renderer..."
+  Write-Host ""
+  Write-Host "Note: If you see graphics pipeline errors, you may need to download"
+  Write-Host "the full JavaFX SDK (including bin directory with DLL files) from:"
+  Write-Host "https://openjfx.io/"
+  Write-Host ""
+  
   & java $javaArgs
+  $exitCode = $LASTEXITCODE
+  
+  if ($exitCode -ne 0) {
+    Write-Host ""
+    Write-Host "Application failed to start. Common solutions:"
+    Write-Host "1. Download full JavaFX SDK from https://openjfx.io/ (includes native DLLs)"
+    Write-Host "2. Extract the SDK and set JAVAFX_LIB to point to the lib directory"
+    Write-Host "3. Ensure the SDK's bin directory (with DLL files) is accessible"
+  }
+  
+  exit $exitCode
 } else {
   Write-Host "Compilation failed."
   Remove-Item "sources.txt" -Force
